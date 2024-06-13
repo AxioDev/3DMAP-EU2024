@@ -59,6 +59,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             max-height: 200px;
             overflow-y: auto;
+            z-index: 1;
         }
 
         .legend-item {
@@ -84,6 +85,7 @@
             text-align: center;
             opacity: 0.8;
             text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            z-index: 2;
         }
 
         .info-bubble {
@@ -123,11 +125,25 @@
         <h1>Carte 3D du résultat des élections européennes 2024</h1>
         <p>Passer ou cliquer sur un pays pour voir les résultats</p>
     </header>
-    <div class="legend" id="legend"></div>
+    <div class="legend" id="legend" style="display: block;" onclick="this.style.display = 'none';">
+        <!-- Include the legend here -->
+
+    </div>
     <div class="info-bubble" id="info-bubble"></div>
     <footer id="footer">
         Contact: axiocontactezmoi@gmail.com
     </footer>
 </body>
+
+<script>
+
+    // check if its a mobile device
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // show an alert to tell to use a computer
+    if (isMobile) {
+        alert("Cette carte est optimisée pour les ordinateurs. Veuillez l'ouvrir sur un ordinateur pour une meilleure expérience.");
+    }
+</script>
 
 </html>

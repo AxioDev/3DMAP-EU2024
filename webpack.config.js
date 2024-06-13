@@ -30,6 +30,9 @@ module.exports = {
     ],
     devServer: {
     //    contentBase: path.join(__dirname, 'dist'),
+        client: {
+            overlay: false
+        },
         compress: true,
         port: 9000
     }

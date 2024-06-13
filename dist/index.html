@@ -1,3 +1,81 @@
-<!doctype html><html lang="fr"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carte 3D du résultat des élections européennes</title><style>body {
-                margin:0;
-            }</style><script defer="defer" src="bundle.js"></script></head><body></body></html>
+<!doctype html><html lang="fr"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carte 3D du résultat des élections européennes</title><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><meta name="msapplication-TileColor" content="#da532c"><meta name="theme-color" content="#ffffff"><style>body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-size: 9px;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+        }
+
+        /* Include the CSS for the legend here */
+        .legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #000;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            max-height: 200px;
+
+            overflow-y: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #000;
+        }
+
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            /* background: #333; */
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            opacity: 0.8;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+
+        }
+
+        .info-bubble {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #000;
+            font-size: 13px;
+            padding: 15px;
+            color: #fff;
+            border: 1px solid #000;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            top: 10px;
+            right: 10px;
+            width: fit-content;
+        }
+
+        #footer {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            opacity: 0.8;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            width: fit-content;
+        }</style><script defer="defer" src="bundle.js"></script></head><body><header id="header"><h1>Carte 3D du résultat des élections européennes 2024</h1><p>Passer ou cliquer sur un pays pour voir les résultats</p></header><div class="legend" id="legend"></div><div class="info-bubble" id="info-bubble"></div><footer id="footer">Contact: axiocontactezmoi@gmail.com</footer></body></html>

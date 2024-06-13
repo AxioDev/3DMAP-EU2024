@@ -9,6 +9,8 @@ import { GUI } from 'dat.gui'
 
 let guiParams = {};
 
+console.log('ifidusfidsiufids');
+
 // Vertex shader
 const vertexShader = `
     varying vec3 vNormal;

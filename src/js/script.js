@@ -1,18 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import jsonData from '../data/communes2024.json';
-import { feature } from 'topojson-client';
 import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier';
+import { feature } from 'topojson-client';
+import { GUI } from 'dat.gui';
 
+import jsonData from '../data/communes2024.json';
 import { resultatsFE, liste_dict, communes_liste_tete } from '../data/comData';
-import { GUI } from 'dat.gui'
 
-console.log('ifidusfidsiufids');
+console.log('Initialization log');
 
 // Vertex shader
 const vertexShader = `
     varying vec3 vNormal;
-
     void main() {
         vNormal = normal;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -23,62 +22,63 @@ const vertexShader = `
 const fragmentShader = `
     uniform vec3 borderColor;
     uniform vec3 objectColor;
-
     varying vec3 vNormal;
-
     void main() {
         vec3 normal = normalize(vNormal);
-        float borderWidth = 0.1; // Largeur de la bordure
-
-        // Si la normale est face à la caméra, c'est une partie de la bordure
+        float borderWidth = 0.1; // Border width
         if (dot(normal, normalize(vec3(0.0, 0.0, 1.0))) > 0.95) {
-            gl_FragColor = vec4(borderColor, 1.0); // Couleur de la bordure
+            gl_FragColor = vec4(borderColor, 1.0); // Border color
         } else {
-            gl_FragColor = vec4(objectColor, 1.0); // Couleur de l'objet
+            gl_FragColor = vec4(objectColor, 1.0); // Object color
         }
     }
 `;
 
-// Création du matériau avec le shader
+// Create shader material
 const materialShader = new THREE.ShaderMaterial({
-    vertexShader: vertexShader,
-    fragmentShader: fragmentShader,
+    vertexShader,
+    fragmentShader,
     uniforms: {
-        borderColor: { value: new THREE.Color(0x000000) }, // Couleur de la bordure (noir)
-        objectColor: { value: new THREE.Color(0x00ff00) }   // Couleur de l'objet (vert)
+        borderColor: { value: new THREE.Color(0x000000) }, // Black border
+        objectColor: { value: new THREE.Color(0x00ff00) }  // Green object
     },
-    side: THREE.FrontSide, // La bordure est visible de l'extérieur
-    polygonOffset: true, // Pour éviter le z-fighting
-    polygonOffsetFactor: 1, // Facteur de décalage
-    polygonOffsetUnits: 1 // Unités de décalage
+    side: THREE.FrontSide,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1
 });
 
 console.log(resultatsFE);
 console.log(jsonData);
+
 const modifier = new SimplifyModifier();
-const renderer = new THREE.WebGLRenderer();
-
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-
+renderer.setPixelRatio(window.devicePixelRatio); // For mobile device support
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const urls = [];
 
+// Load the background texture
+const textureLoader = new THREE.TextureLoader();
+textureLoader.load('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/2560px-Flag_of_Europe.svg.png', (texture) => {
+    scene.background = texture;
+});
+
+const urls = [];
 const deptMin = 1;
 const deptMax = 95;
 
 for (let i = deptMin; i <= deptMax; i++) {
-
-    if (i < 10) {
-        i = '0' + i;
+    let dept = i < 10 ? '0' + i : i;
+    if (dept === 20) {
+        urls.push(
+            'https://assets-decodeurs.lemonde.fr/decodeurs/elections_snippets/europeennes/exports2024/export_communes2A.json',
+            'https://assets-decodeurs.lemonde.fr/decodeurs/elections_snippets/europeennes/exports2024/export_communes2B.json'
+        );
+    } else {
+        urls.push(`https://assets-decodeurs.lemonde.fr/decodeurs/elections_snippets/europeennes/exports2024/export_communes${dept}.json`);
     }
-    if (i == 20) {
-        urls.push('https://assets-decodeurs.lemonde.fr/decodeurs/elections_snippets/europeennes/exports2024/export_communes2A.json');
-        urls.push('https://assets-decodeurs.lemonde.fr/decodeurs/elections_snippets/europeennes/exports2024/export_communes2B.json');
-        continue;
-    }
-    urls.push('https://assets-decodeurs.lemonde.fr/decodeurs/elections_snippets/europeennes/exports2024/export_communes' + i + '.json');
 }
 
 console.log(urls);
@@ -93,89 +93,56 @@ const extrudeSettings = {
     bevelSegments: 1
 };
 
-function getRandomColor() {
-    return Math.random() * 0xffffff;
-}
+const getRandomColor = () => Math.random() * 0xffffff;
 
-const fetchPromises = urls.map(url => fetch(url).then(response => {
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-}));
+const fetchPromises = urls.map(url => 
+    fetch(url).then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+    })
+);
+
 let deptDatas = {};
 Promise.all(fetchPromises)
     .then(results => {
-        // Ici, results est un tableau des résultats de chaque fetch
-        // results = results.map(elt => 'x');
-        // deptDatas = results.reduce((acc, currentObject) => {
-        //     console.log("Reducing...", ...currentObject);
-        //     return { ...acc, ...currentObject };
-        //   }, {});
-
-        const out = {};
-        for (let res of results) {
-            for (let deptData in res) {
-                out[deptData] = res[deptData];
-            }
-        }
-        deptDatas = out;
+        deptDatas = results.reduce((acc, res) => ({ ...acc, ...res }), {});
         const geojson = feature(jsonData, jsonData.objects.a_com);
         createMap(geojson);
-        renderer.render(scene, camera);
-        // Vous pouvez continuer votre code ici
-
-
-
-
+        animate();
     })
-    .catch(error => {
-        // Si l'une des promesses est rejetée, vous pouvez traiter l'erreur ici
-        console.error('One of the fetch requests failed:', error);
-    });
+    .catch(error => console.error('Fetch request failed:', error));
 
-
-const camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    100000
-);
-
-
-const axesHelper = new THREE.AxesHelper(50);
-scene.add(axesHelper);
-camera.position.set(-500, -500, 500);
-camera.up.set(0, 0, 1)
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
+camera.position.set(-500, -500, 1000); // Less zoom by default
+camera.up.set(0, 0, 1);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.listenToKeyEvents(window);
-controls.addEventListener('change', () => { renderer.render(scene, camera) });
-controls.update();
+controls.enableDamping = true; // Enable damping (inertia) for smoother experience
+controls.dampingFactor = 0.25;
+controls.addEventListener('change', () => renderer.render(scene, camera));
 controls.target.set(camera.position.x, camera.position.y, 0);
 controls.update();
 
+const axesHelper = new THREE.AxesHelper(50);
+scene.add(axesHelper);
 
-const light = new THREE.AmbientLight(0xFFFFFF); // soft white light
-// scene.add( light );
+// Add more lights to brighten the scene
+const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
+scene.add(ambientLight);
 
-
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 2);
-hemiLight.color.setRGB(0.3, 0.3, 0.3);
-// hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
-hemiLight.position.set(500, -2000, 50);
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 2); // Increased intensity
+hemiLight.color.setRGB(0.6, 0.6, 0.6);
+hemiLight.position.set(500, -2000, 100);
 scene.add(hemiLight);
+scene.add(new THREE.HemisphereLightHelper(hemiLight, 10));
 
-const hemiLightHelper = new THREE.HemisphereLightHelper(hemiLight, 10);
-scene.add(hemiLightHelper);
-
-
-
-let mouse, raycaster;
+let mouse = new THREE.Vector2();
+let raycaster = new THREE.Raycaster();
 const meshes = [];
-raycaster = new THREE.Raycaster();
-mouse = new THREE.Vector2();
+
 window.addEventListener('click', onMouseClick, false);
+
 function onMouseClick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
@@ -186,7 +153,7 @@ function onMouseClick(event) {
     if (intersects.length > 0) {
         const mesh = intersects[0].object;
         const properties = mesh.userData.properties;
-        // const infos = info_commune[id_commune];
+
         console.log(mesh, properties, deptDatas[properties.c]);
        
         guiParams.name = properties.l;
@@ -197,43 +164,27 @@ function onMouseClick(event) {
         guiParams.votants = deptDatas[properties.c].votants;
         guiParams.nuls = deptDatas[properties.c].nuls;
 
+        const res = Object.entries(deptDatas[properties.c].res).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
-
-        let res = deptDatas[properties.c].res;
-        const entries = Object.entries(res);
-
-        // Étape 2 : Trier le tableau par les valeurs (valeur croissante)
-        console.log(entries);
-        entries.sort((a, b) => b[1] - a[1]);
-        console.log(entries, entries.slice(0, 3));
-        const resOrdered = entries.slice(0, 3);
-
-
-        let i = 1;
-        for (let i of [1, 2, 3]) {
-            guiParams['res' + i + '_label'] = '';
-            guiParams['res' + i + '_value'] = '';
+        for (let i = 1; i <= 3; i++) {
+            guiParams[`res${i}_label`] = '';
+            guiParams[`res${i}_value`] = '';
         }
-        console.log('resOrdered', resOrdered);
-        i = 1;
-        for (let j in resOrdered) {
-            let listeId = resOrdered[j][0];
-            console.log("listeId", listeId);
-            let listeRealId = liste_dict[listeId].id;
 
-            let infos = resultatsFE.listes.filter(liste => liste.num == listeRealId)[0];
-            console.log(infos.nom_court, resOrdered[j]);
-            guiParams['res' + i + '_label'] = infos.nom_court;
-            guiParams['res' + i + '_value'] = resOrdered[j][1];
-            i++;
-        }
+        res.forEach((item, index) => {
+            const listeId = item[0];
+            const listeRealId = liste_dict[listeId].id;
+            const info = resultatsFE.listes.find(liste => liste.num === listeRealId);
+
+            guiParams[`res${index + 1}_label`] = info.nom_court;
+            guiParams[`res${index + 1}_value`] = item[1];
+        });
+
         gui.updateDisplay();
-        // 
     }
 }
 
-
-const gui = new GUI()
+const gui = new GUI();
 const guiParams = {
     name: '',
     abstentions: '',
@@ -247,8 +198,9 @@ const guiParams = {
     res3_label: '',
     res1_value: '',
     res2_value: '',
-    res3_value: '',
+    res3_value: ''
 };
+
 gui.add(guiParams, 'name').name('Commune');
 gui.add(guiParams, 'inscrits').name('Inscrits');
 gui.add(guiParams, 'abstentions').name('Abstentions');
@@ -256,113 +208,93 @@ gui.add(guiParams, 'votants').name('Votants');
 gui.add(guiParams, 'exprimes').name('Exprimés');
 gui.add(guiParams, 'blancs').name('Blancs');
 gui.add(guiParams, 'nuls').name('Nuls');
+
 const resFolder = gui.addFolder('Résultats');
 resFolder.add(guiParams, 'res1_label').name('Liste');
 resFolder.add(guiParams, 'res1_value').name('Nb Votes');
-
 resFolder.add(guiParams, 'res2_label').name('Liste');
 resFolder.add(guiParams, 'res2_value').name('Nb Votes');
-
 resFolder.add(guiParams, 'res3_label').name('Liste');
 resFolder.add(guiParams, 'res3_value').name('Nb Votes');
 resFolder.open();
 
-
-
 function createMap(geojson) {
-    console.log("Here we go !");
-    const geometry = new THREE.BufferGeometry();
-    let minX = 999999999;
-    let minY = 999999999;
-    let maxX = 0;
-    let maxY = 0;
-    console.log(deptDatas);
+    console.log("Creating map...");
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     geojson.features.forEach(feature => {
-
-        if (!(feature.properties.d >= deptMin && feature.properties.d <= deptMax)) {
-            return;
-        }
+        if (feature.properties.d < deptMin || feature.properties.d > deptMax) return;
 
         feature.geometry.coordinates.forEach(polygon => {
-            if (feature.geometry.type == 'MultiPolygon') {
-                console.log("MULTI");
-                polygon = polygon[0];
-            }
-            minX = Math.min(minX, ...polygon.map(elt => elt[0]));
-            maxX = Math.max(maxX, ...polygon.map(elt => elt[0]));
-            minY = Math.min(minY, ...polygon.map(elt => elt[1]));
-            maxY = Math.max(maxY, ...polygon.map(elt => elt[1]));
+            if (feature.geometry.type === 'MultiPolygon') polygon = polygon[0];
+            polygon.forEach(coord => {
+                const [x, y] = coord;
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+            });
         });
     });
-    console.log("min", minX, minY);
-    console.log("max", maxX, maxY);
+
+    console.log("Bounds:", minX, minY, maxX, maxY);
 
     geojson.features.forEach(feature => {
+        if (feature.properties.d < deptMin || feature.properties.d > deptMax) return;
 
-        if (!(feature.properties.d >= deptMin && feature.properties.d <= deptMax)) {
-            return;
-        }
-        // console.log("feature", feature);
-        let coordinates = feature.geometry.coordinates;
-        if (feature.geometry.type == 'MultiPolygon') {
-            // console.log("MULTI");
-
-        }
         feature.geometry.coordinates.forEach(polygon => {
+            if (feature.geometry.type === 'MultiPolygon') polygon = polygon[0];
+
             const shape = new THREE.Shape();
-            // console.log("polygon", polygon);
-            if (feature.geometry.type == 'MultiPolygon') {
-                // console.log("MULTI");
-                polygon = polygon[0];
-            }
-            polygon.forEach((coord, index) => {
-                //console.log('ring', coord);
-                let x = (coord[0] - maxX) / 1000;
-                let y = (coord[1] - maxY) / 1000;
-                //console.log("Coord", coord, x, y);
+            polygon.forEach(([x, y], index) => {
+                x = (x - maxX) / 1000;
+                y = (y - maxY) / 1000;
                 if (index === 0) {
                     shape.moveTo(x, y);
                 } else {
                     shape.lineTo(x, y);
                 }
             });
-            // const geometry = new THREE.ShapeGeometry(shape);
-            // console.log(feature.properties.c);
-            // console.log(deptDatas[feature.properties.c]);
-            let depth = deptDatas[feature.properties.c] ? deptDatas[feature.properties.c].votants / 300 : 1;
-            let color = '#000000';
-            if (communes_liste_tete[feature.properties.c]) {
-                let listeId = communes_liste_tete[feature.properties.c];
-                let listeRealId = liste_dict[listeId].id;
 
-                color = resultatsFE.listes.filter(liste => liste.num == listeRealId)[0].couleur;
-                if (communes_liste_tete[feature.properties.c] == 6) //Les républicains : 6 > 18
-                    console.log(communes_liste_tete[feature.properties.c], color, resultatsFE.listes.filter(liste => liste.num == communes_liste_tete[feature.properties.c])[0].liste);
-            }
-            // console.log("dept", depth);
+            const depth = deptDatas[feature.properties.c] ? deptDatas[feature.properties.c].votants / 300 : 1;
+            const color = communes_liste_tete[feature.properties.c]
+                ? resultatsFE.listes.find(liste => liste.num === liste_dict[communes_liste_tete[feature.properties.c]].id).couleur
+                : '#000000';
 
             extrudeSettings.depth = depth;
             const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            const material = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide, wireframe: false });
-
-            // const simplifiedGeometry = modifier.modify(geometry, geometry.attributes.position.count * 0.1); // Réduire à 25% des points originaux
-            // const simplifiedMesh = new THREE.Mesh(simplifiedGeometry, material);
+            const material = new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide });
 
             materialShader.uniforms.objectColor.value = new THREE.Color(color);
             const mesh = new THREE.Mesh(geometry, material);
             mesh.userData.properties = feature.properties;
+
+            // // Create a border for each commune
+            // const borderGeometry = new THREE.EdgesGeometry(geometry);
+            // const borderMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+            // const border = new THREE.LineSegments(borderGeometry, borderMaterial);
+            // mesh.add(border);
+
             meshes.push(mesh);
-
-            // console.log(shape);
-
             scene.add(mesh);
         });
-
-
     });
-
 
 }
 
 
+
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update(); // Required if controls.enableDamping or controls.autoRotate are set to true
+    renderer.render(scene, camera);
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+window.addEventListener('resize', onWindowResize, false);

@@ -7,8 +7,6 @@ import { SimplifyModifier } from 'three/examples/jsm/modifiers/SimplifyModifier'
 import { resultatsFE, liste_dict, communes_liste_tete } from '../data/comData';
 import { GUI } from 'dat.gui'
 
-let guiParams = {};
-
 console.log('ifidusfidsiufids');
 
 // Vertex shader
@@ -236,7 +234,7 @@ function onMouseClick(event) {
 
 
 const gui = new GUI()
-guiParams = {
+const guiParams = {
     name: '',
     abstentions: '',
     blancs: '',

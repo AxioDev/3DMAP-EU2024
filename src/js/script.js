@@ -232,7 +232,7 @@ function onMouseClick(event) {
 
 
 const gui = new GUI()
-let guiParams = {
+const guiParams = {
     name: '',
     abstentions: '',
     blancs: '',

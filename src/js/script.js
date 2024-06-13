@@ -51,11 +51,6 @@ const materialShader = new THREE.ShaderMaterial({
     polygonOffsetUnits: 1 // Unités de décalage
 });
 
-let guiParams = {
-    borderColor: '#000000',
-    objectColor: '#00ff00'
-};
-
 console.log(resultatsFE);
 console.log(jsonData);
 const modifier = new SimplifyModifier();
@@ -237,7 +232,7 @@ function onMouseClick(event) {
 
 
 const gui = new GUI()
-guiParams = {
+let guiParams = {
     name: '',
     abstentions: '',
     blancs: '',

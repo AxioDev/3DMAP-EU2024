@@ -187,6 +187,8 @@ function onMouseClick(event) {
         const properties = mesh.userData.properties;
         // const infos = info_commune[id_commune];
         console.log(mesh, properties, deptDatas[properties.c]);
+       
+        let guiParams = {};
         guiParams.name = properties.l;
         guiParams.abstentions = deptDatas[properties.c].abstentions;
         guiParams.blancs = deptDatas[properties.c].blancs;
